@@ -1,7 +1,7 @@
 import {
-    BrightnessDevice, ColorSettingDevice,
+    BrightnessDevice, ColorSettingDevice, LightEffectsDevice,
     Device,
-    isBrightness, isColorSetting, OnOffDevice
+    isBrightness, isColorSetting, isLightEffects, OnOffDevice
 } from '@andrei-tatar/nora-firebase-common';
 import { ConfigNode, NodeInterface } from '..';
 import { convertValueType, getNumberOrDefault, getValue, R, registerNoraDevice } from './util';
@@ -23,7 +23,7 @@ module.exports = function (RED: any) {
         const { value: offValue, type: offType } = convertValueType(RED, config.offvalue, config.offvalueType, { defaultValue: false });
         const brightnessOverride = Math.max(0, Math.min(100, Math.round(config.brightnessoverride))) || 0;
 
-        const deviceConfig: Omit<OnOffDevice, 'id'> = {
+        const deviceConfig: Omit<OnOffDevice & BrightnessDevice & ColorSettingDevice & LightEffectsDevice, 'id'> = {
             type: 'action.devices.types.LIGHT',
             traits: ['action.devices.traits.OnOff'],
             name: {
@@ -38,8 +38,7 @@ module.exports = function (RED: any) {
             noraSpecific: {
                 returnOnOffErrorCodeIfStateAlreadySet: !!config.errorifstateunchaged,
             },
-            attributes: {
-            },
+            attributes: {},
         };
 
         if (brightnessControl) {
@@ -104,6 +103,21 @@ module.exports = function (RED: any) {
             }
         }
 
+        if (isLightEffects(deviceConfig)) {
+            // Add LightEffects trait to the device configuration
+            deviceConfig.traits.push('action.devices.traits.LightEffects');
+            deviceConfig.attributes = {
+                supportedEffects: ['colorLoop', 'sleep', 'wake'],
+                defaultColorLoopDuration: 1800,
+                defaultSleepDuration: 1800,
+                defaultWakeDuration: 1800,
+            };
+            deviceConfig.state = {
+                ...deviceConfig.state,
+                activeLightEffect: 'colorLoop', // Default active effect
+            };
+        }
+
         registerNoraDevice(this, RED, config, {
             deviceConfig,
             updateStatus: ({ state, update }) => {
@@ -131,16 +145,20 @@ module.exports = function (RED: any) {
                     statuses.push(`${state.color.temperatureK}K`);
                 }
 
+                if (isLightEffects(deviceConfig) && 'activeLightEffect' in state) {
+                    statuses.push(`Effect: ${state.activeLightEffect}`);
+                }
+
                 update(statuses.join(' '));
             },
             mapStateToOutput: state => {
-                if (!brightnessControl && !colorControl) {
+                if (!brightnessControl && !colorControl && !isLightEffects(deviceConfig)) {
                     const value = state.on;
                     return {
                         payload: getValue(RED, this, value ? onValue : offValue, value ? onType : offType),
                     };
                 } else {
-                    if (statepayload || colorControl) {
+                    if (statepayload || colorControl || isLightEffects(deviceConfig)) {
                         return {
                             payload: { ...state },
                         };
@@ -152,7 +170,7 @@ module.exports = function (RED: any) {
                 }
             },
             handleNodeInput: async ({ msg, updateState }) => {
-                if (!brightnessControl && !colorControl) {
+                if (!brightnessControl && !colorControl && !isLightEffects(deviceConfig)) {
                     const myOnValue = getValue(RED, this, onValue, onType);
                     const myOffValue = getValue(RED, this, offValue, offType);
                     if (RED.util.compareObjects(myOnValue, msg.payload)) {
