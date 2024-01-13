@@ -90,6 +90,15 @@
             filter: {
                 value: false,
             },
+            lighteffectssupported: {
+                value: ''
+            },
+            lighteffectsdefaults: {
+                value: ''
+            },
+            lighteffectsactive: {
+                value: ''
+            }
         },
         inputs: 1,
         outputs: 1,
@@ -127,6 +136,19 @@
                     $('#temp-max').hide();
                 }
             };
+            $('#node-input-lighteffects').change(function () {
+                if (this.checked) {
+                    // show LightEffects related options
+                    $('#light-effects-supported').show();
+                    $('#light-effects-defaults').show();
+                    $('#light-effects-active').show();
+                } else {
+                    // hide LightEffects related options
+                    $('#light-effects-supported').hide();
+                    $('#light-effects-defaults').hide();
+                    $('#light-effects-active').hide();
+                }
+            });
             $('#node-input-onvalue').typedInput({
                 default: 'str',
                 typeField: $("#node-input-onvalueType"),
@@ -279,6 +301,18 @@
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name">
+    </div>
+    <div class="form-row" id="light-effects-supported">
+        <label for="node-input-lighteffectssupported"><i class="fa fa-lightbulb-o"></i> Supported Light Effects</label>
+        <input type="text" id="node-input-lighteffectssupported" style="width: 70%">
+    </div>
+    <div class="form-row" id="light-effects-defaults">
+        <label for="node-input-lighteffectsdefaults"><i class="fa fa-lightbulb-o"></i> Default Light Effects Durations (seconds)</label>
+        <input type="text" id="node-input-lighteffectsdefaults" style="width: 70%">
+    </div>
+    <div class="form-row" id="light-effects-active">
+        <label for="node-input-lighteffectsactive"><i class="fa fa-lightbulb-o"></i> Active Light Effect</label>
+        <input type="text" id="node-input-lighteffectsactive" style="width: 70%">
     </div>
 </script>
 
